@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// MÓDULO 1: AUTH & WORKSPACE
+// ==========================================
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  name          String
+  password_hash String
+  created_at    DateTime        @default(now())
+  
+  workspaces    WorkspaceUser[]
+  notes         ContractNote[]
+  alerts        Alert[]
+}
+
+model Workspace {
+  id         String   @id @default(uuid())
+  name       String
+  plan       String   @default("free")
+  created_at DateTime @default(now())
+
+  users      WorkspaceUser[]
+  invites    Invite[]
+  contracts  Contract[]
+  configs    AlertConfig[]
+}
+
+model WorkspaceUser {
+  user_id      String
+  workspace_id String
+  role         String   // admin, legal, finance, viewer
+
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, workspace_id])
+}
+
+model Invite {
+  id           String    @id @default(uuid())
+  workspace_id String
+  email        String
+  role         String
+  token        String    @unique
+  expires_at   DateTime
+  
+  workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// MÓDULO 2: CONTRATOS & EXTRAÇÃO (MVP CORE)
+// ==========================================
+
+model Contract {
+  id          String   @id @default(uuid())
+  workspace_id String
+  title       String
+  status      String   @default("processing") // processing, active, expiring, expired
+  file_url    String
+  created_at  DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  
+  data        ExtractedData?
+  parties     ContractParty[]
+  clauses     ContractClause[]
+  versions    ContractVersion[]
+  notes       ContractNote[]
+  tags        ContractTag[]
+  events      TimelineEvent[]
+}
+
+model ExtractedData {
+  id                 String   @id @default(uuid())
+  contract_id        String   @unique
+  start_date         DateTime?
+  end_date           DateTime?
+  value              Float?
+  readjustment_index String?
+  readjustment_date  DateTime?
+  auto_renewal       Boolean  @default(false)
+  notice_days        Int?
+  raw_gemini_json    Json?
+
+  contract           Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+}
+
+model ContractParty {
+  id          String   @id @default(uuid())
+  contract_id String
+  name        String
+  cnpj        String?
+  type        String   // contractor, hired
+
+  contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+}
+
+model ContractClause {
+  id          String   @id @default(uuid())
+  contract_id String
+  type        String   // obligation, penalty, termination
+  content     String
+  page_ref    Int?
+
+  contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+}
+
+model ContractVersion {
+  id          String   @id @default(uuid())
+  contract_id String
+  file_url    String
+  version_num Int
+  created_at  DateTime @default(now())
+
+  contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+}
+
+model ContractNote {
+  id          String   @id @default(uuid())
+  contract_id String
+  user_id     String
+  content     String
+  created_at  DateTime @default(now())
+
+  contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model ContractTag {
+  id          String   @id @default(uuid())
+  contract_id String
+  tag         String
+
+  contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// MÓDULO 3: TIMELINE & ALERTAS
+// ==========================================
+
+model TimelineEvent {
+  id            String   @id @default(uuid())
+  contract_id   String
+  type          String
+  scheduled_for DateTime
+  description   String
+  resolved      Boolean  @default(false)
+
+  contract      Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+}
+
+model Alert {
+  id          String   @id @default(uuid())
+  user_id     String
+  type        String
+  days_before Int
+  sent_at     DateTime?
+  channel     String   @default("email")
+
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model AlertConfig {
+  id           String   @id @default(uuid())
+  workspace_id String
+  type         String
+  days_before  Int
+  enabled      Boolean  @default(true)
+
+  workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+}
