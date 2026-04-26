@@ -43,4 +43,4 @@ EXPOSE 3000
 
 # Usamos um shell script ou o formato de array para o CMD.
 # Nota: "migrate deploy" é o comando correto para produção (não reseta o banco).
-CMD sh -c "npx prisma migrate deploy && node dist/server.js"
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/server.js"]
