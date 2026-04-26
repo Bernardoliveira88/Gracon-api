@@ -1,4 +1,3 @@
-
 name: Backend CI
 
 on:
@@ -10,6 +9,10 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    
+    # Injeta um ambiente falso só pro Prisma não surtar no CI
+    env:
+      DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +32,5 @@ jobs:
       - name: Run Lint
         run: npm run lint
 
-      # Teste de fumaça: Tenta buildar a imagem Docker do projeto
       - name: Build Docker Image
         run: docker build -t backend-api-test .
