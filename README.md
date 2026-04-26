@@ -21,5 +21,5 @@ Repositório principal do backend do MVP de gestão inteligente de contratos. Co
 
 1. **Clone o repositório:**
    ```bash
-   git clone git@github.com:SuaOrganizacao/nome-repo-api.git
-   cd nome-repo-api
+   git clone git@github.com:Repositorio-de-projetos-da-faculdade/nexusDoc-api.git
+   
