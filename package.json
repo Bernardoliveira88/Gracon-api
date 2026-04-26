@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Repositório principal do backend do MVP de gestão inteligente de contratos. Construído com Node.js, Fastify e Prisma, integrado à API do Google Gemini (Flash 2.5) para processamento de PDFs.",
   "main": "index.js",
+  "type": "module",
  "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "npx prisma generate && tsc",
