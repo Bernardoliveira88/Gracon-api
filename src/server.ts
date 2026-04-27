@@ -1,24 +1,23 @@
-import 'dotenv/config'; 
+import 'dotenv/config';
 import fastify from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
+import fastifyJwt from '@fastify/jwt';
+import { prisma } from './lib/prisma.js';
+import { authRoutes } from './http/routes/auth-routes.js';
 
 const app = fastify({ logger: true });
 
-// 1. Passamos a string de conexão para o Adaptador Postgres
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!
+app.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET || 'nexusdoc-super-secret-key-123',
 });
 
-// 2. Passamos o Adaptador para o PrismaClient
-const prisma = new PrismaClient({ adapter });
+app.register(authRoutes, { prefix: '/auth' });
 
 app.get('/', async (request, reply) => {
- 
+
   const workspacesCount = await prisma.workspace.count();
-  
-  return { 
-    status: 'NexusDoc API Online 🚀', 
+
+  return {
+    status: 'NexusDoc API Online 🚀',
     db_connection: 'OK',
     workspaces: workspacesCount
   };
