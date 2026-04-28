@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
+import multipart from '@fastify/multipart';
 import { prisma } from './lib/prisma.js';
 import { authRoutes } from './http/routes/auth-routes.js';
+import { contractRoutes } from './routes/contract.routes.js'
 
 const app = fastify({ logger: true });
 
@@ -10,7 +12,11 @@ app.register(fastifyJwt, {
   secret: process.env.JWT_SECRET || 'nexusdoc-super-secret-key-123',
 });
 
+app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024}});
 app.register(authRoutes, { prefix: '/auth' });
+app.register(contractRoutes).after((err) => {
+  if (err) console.error('Erro ao registrar contractRoutes:', err);
+});
 
 app.get('/', async (request, reply) => {
 
