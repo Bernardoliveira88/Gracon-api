@@ -1,7 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { prisma } from '../../lib/prisma.js';
+import { Role } from '@prisma/client';
 
-export function verifyUserRole(roleToVerify: string) {
+export function verifyUserRole(roleToVerify: Role) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     // Pega o ID do workspace pelo header da requisição
     const workspaceId = request.headers['x-workspace-id'] as string;
@@ -31,7 +32,7 @@ export function verifyUserRole(roleToVerify: string) {
     }
 
     // Se ele for admin, tem acesso a tudo. Se não, tem que ter o papel exato.
-    if (workspaceUser.role !== 'admin' && workspaceUser.role !== roleToVerify) {
+    if (workspaceUser.role !== Role.ADMIN && workspaceUser.role !== roleToVerify) {
       return reply.status(403).send({ message: `Acesso negado: Exige o papel ${roleToVerify}.` });
     }
   };
