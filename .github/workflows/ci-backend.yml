@@ -9,10 +9,12 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    
-    # Injeta um ambiente falso só pro Prisma não surtar no CI
+
     env:
       DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+      JWT_SECRET: "ci-test-secret-that-is-at-least-32-characters-long"
+      GEMINI_API_KEY: "dummy-key-for-ci"
+      NODE_ENV: "test"
 
     steps:
       - uses: actions/checkout@v4
@@ -32,5 +34,8 @@ jobs:
       - name: Run Lint
         run: npm run lint
 
+      - name: Run Tests
+        run: npm run test
+
       - name: Build Docker Image
-        run: docker build -t backend-api-test .
+        run: docker build -t nexusdoc-api-test .

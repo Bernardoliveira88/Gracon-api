@@ -5,10 +5,10 @@ import { prisma } from '../../../lib/prisma.js';
 
 export async function register(request: FastifyRequest, reply: FastifyReply) {
   const registerBodySchema = z.object({
-    name: z.string(),
-    email: z.string().email(),
-    password: z.string().min(6),
-    workspace_name: z.string(),
+    name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres.'),
+    email: z.string().email('E-mail inválido.'),
+    password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres.'),
+    workspace_name: z.string().min(2, 'Nome do workspace deve ter pelo menos 2 caracteres.'),
   });
 
   const { name, email, password, workspace_name } = registerBodySchema.parse(request.body);
@@ -18,13 +18,14 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
   });
 
   if (userWithSameEmail) {
-    return reply.status(409).send({ message: 'E-mail already exists.' });
+    return reply.status(409).send({ message: 'E-mail já está em uso.' });
   }
 
-  const password_hash = await hash(password, 6);
+  // Custo 10 é o padrão seguro recomendado (custo 6 era muito baixo)
+  const password_hash = await hash(password, 10);
 
-  // Prisma Transaction: Cria Usuário, Workspace e a ligação entre eles como Admin.
-  await prisma.$transaction(async (tx) => {
+  // Transaction atômica: Cria Usuário + Workspace + vínculo como ADMIN
+  const result = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         name,
@@ -47,7 +48,13 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
         role: 'ADMIN',
       },
     });
+
+    return { userId: user.id, workspaceId: workspace.id };
   });
 
-  return reply.status(201).send();
+  return reply.status(201).send({
+    message: 'Usuário criado com sucesso.',
+    userId: result.userId,
+    workspaceId: result.workspaceId,
+  });
 }

@@ -1,7 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { ExtractedContractData } from "../types/contract.types.js";
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import type { ExtractedContractData } from '../types/contract.types.js';
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = 'gemini-2.5-flash';
 
 const SYSTEM_PROMPT = `Você é um sistema especializado em análise jurídica de contratos empresariais brasileiros.
 
@@ -69,14 +69,14 @@ export class GeminiService {
 
   constructor(apiKey: string) {
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY não configurada.");
+      throw new Error('GEMINI_API_KEY não configurada.');
     }
     this.client = new GoogleGenerativeAI(apiKey);
   }
 
   async extractContractData(
     pdfBase64: string,
-    mimeType: string
+    mimeType: string,
   ): Promise<{ extracted: ExtractedContractData; raw: string }> {
     const model = this.client.getGenerativeModel({
       model: MODEL,
@@ -86,7 +86,7 @@ export class GeminiService {
     const result = await model.generateContent({
       contents: [
         {
-          role: "user",
+          role: 'user',
           parts: [
             {
               inlineData: {
@@ -100,7 +100,7 @@ export class GeminiService {
       ],
       generationConfig: {
         temperature: 0.1,
-        responseMimeType: "application/json",
+        responseMimeType: 'application/json',
       },
     });
 
@@ -109,25 +109,25 @@ export class GeminiService {
     let extracted: ExtractedContractData;
     try {
       const cleaned = raw
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/```\s*$/i, "")
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/```\s*$/i, '')
         .trim();
 
       extracted = JSON.parse(cleaned) as ExtractedContractData;
 
       // Valida se o documento era realmente um contrato
-      if (extracted.statusExtracao === "insuficiente") {
+      if (extracted.statusExtracao === 'insuficiente') {
         throw new Error(
-          "O documento enviado não parece ser um contrato válido."
+          'O documento enviado não parece ser um contrato válido.',
         );
       }
     } catch (err) {
-      if (err instanceof Error && err.message.includes("não parece ser")) {
+      if (err instanceof Error && err.message.includes('não parece ser')) {
         throw err;
       }
       throw new Error(
-        `Gemini retornou resposta inválida. Resposta bruta: ${raw.slice(0, 200)}`
+        `Gemini retornou resposta inválida. Resposta bruta: ${raw.slice(0, 200)}`,
       );
     }
 

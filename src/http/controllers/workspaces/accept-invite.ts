@@ -4,30 +4,24 @@ import { prisma } from '../../../lib/prisma.js';
 
 export async function acceptInvite(request: FastifyRequest, reply: FastifyReply) {
   const acceptInviteParamsSchema = z.object({
-    token: z.string().uuid(),
+    token: z.string().uuid('Token inválido.'),
   });
 
   const { token } = acceptInviteParamsSchema.parse(request.params);
-
-  // @ts-ignore
-  const userId = request.user?.sub;
-
-  if (!userId) {
-    return reply.status(401).send({ message: 'Usuário não autenticado.' });
-  }
+  const userId = request.user.sub;
 
   // Busca o usuário logado para validar o e-mail
   const user = await prisma.user.findUnique({
-    where: { id: userId }
+    where: { id: userId },
   });
 
   if (!user) {
     return reply.status(404).send({ message: 'Usuário não encontrado.' });
   }
 
-  // Busca o convite
+  // Busca o convite pelo token
   const invite = await prisma.invite.findUnique({
-    where: { token }
+    where: { token },
   });
 
   if (!invite) {
@@ -47,27 +41,27 @@ export async function acceptInvite(request: FastifyRequest, reply: FastifyReply)
     where: {
       user_id_workspace_id: {
         user_id: user.id,
-        workspace_id: invite.workspace_id
-      }
-    }
+        workspace_id: invite.workspace_id,
+      },
+    },
   });
 
   if (existingMember) {
     return reply.status(409).send({ message: 'Você já faz parte deste workspace.' });
   }
 
-  // Transação: Adiciona usuário ao workspace e remove o convite
+  // Transação atômica: adiciona ao workspace + deleta o convite
   await prisma.$transaction(async (tx) => {
     await tx.workspaceUser.create({
       data: {
         user_id: user.id,
         workspace_id: invite.workspace_id,
         role: invite.role,
-      }
+      },
     });
 
     await tx.invite.delete({
-      where: { id: invite.id }
+      where: { id: invite.id },
     });
   });
 
