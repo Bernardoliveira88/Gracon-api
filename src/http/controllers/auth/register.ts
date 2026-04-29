@@ -44,7 +44,7 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
       data: {
         user_id: user.id,
         workspace_id: workspace.id,
-        role: 'admin',
+        role: 'ADMIN',
       },
     });
   });
