@@ -1,23 +1,38 @@
 export interface ExtractedContractData {
   titulo: string | null;
+
   partes: {
     contratante: string | null;
     contratado: string | null;
   };
+
   objeto: string | null;
+
   prazos: {
-    inicio: string | null;      // ISO 8601 quando possível
+    inicio: string | null;
     termino: string | null;
-    vigencia: string | null;    // ex: "12 meses"
+    vigencia: string | null;
+    prazoRelativo: string | null;
     renovacao: string | null;
   };
+
   valor: {
     total: string | null;
     moeda: string | null;
     formaPagamento: string | null;
+    reajuste: string | null;
   };
+
+  penalidades: {
+    multaInadimplemento: string | null;
+    multaRescisao: string | null;
+    juros: string | null;
+  };
+
   clausulasRelevantes: string[];
-  alertas: string[];            // prazos próximos, cláusulas de atenção
+  alertas: string[];
+
+  statusExtracao: "completo" | "parcial" | "insuficiente";
 }
 
 export interface PipelineResult {

@@ -3,44 +3,66 @@ import type { ExtractedContractData } from "../types/contract.types.js";
 
 const MODEL = "gemini-2.5-flash";
 
-const SYSTEM_PROMPT = `Você é um especialista em análise jurídica de contratos empresariais.
-Sua tarefa é extrair informações estruturadas de contratos em PDF.
-Responda APENAS com um objeto JSON válido, sem markdown, sem explicações, sem blocos de código.
-Siga exatamente o schema fornecido pelo usuário.`;
+const SYSTEM_PROMPT = `Você é um sistema especializado em análise jurídica de contratos empresariais brasileiros.
 
-const EXTRACTION_PROMPT = `Analise este contrato e extraia as informações no seguinte formato JSON:
+SUAS REGRAS ABSOLUTAS:
+1. Responda SOMENTE com JSON válido — zero texto fora do JSON
+2. Nunca invente informações — se não encontrar, use null
+3. Nunca use markdown, blocos de código ou explicações
+4. Seja preciso: extraia o que está escrito, não interprete além do texto
+5. Em caso de ambiguidade, escolha a interpretação mais conservadora`;
+
+const EXTRACTION_PROMPT = `Analise o contrato e extraia as informações no JSON abaixo.
+Siga o schema exatamente — não adicione nem remova campos.
 
 {
-  "titulo": "título ou tipo do contrato",
+  "titulo": "título ou tipo do contrato conforme escrito no documento, ou null",
+
   "partes": {
-    "contratante": "nome completo do contratante (quem contrata)",
-    "contratado": "nome completo do contratado (quem presta o serviço/fornece)"
+    "contratante": "nome completo de quem contrata (geralmente quem paga), ou null",
+    "contratado": "nome completo de quem presta o serviço ou fornece, ou null"
   },
-  "objeto": "descrição resumida do objeto do contrato em 1-2 frases",
+
+  "objeto": "descrição do objeto em 1-3 frases, extraída diretamente do contrato, ou null",
+
   "prazos": {
-    "inicio": "data de início no formato YYYY-MM-DD ou null",
-    "termino": "data de término no formato YYYY-MM-DD ou null",
-    "vigencia": "duração textual ex: '12 meses' ou null",
-    "renovacao": "condições de renovação resumidas ou null"
+    "inicio": "data de início em YYYY-MM-DD se explícita, ou null",
+    "termino": "data de término em YYYY-MM-DD se explícita, ou null",
+    "vigencia": "duração textual como está no contrato, ex: '12 meses', '1 ano', ou null",
+    "prazoRelativo": "se o prazo depende de um evento, descreva, ex: '90 dias após assinatura', ou null",
+    "renovacao": "condição de renovação resumida, ex: 'automática por igual período salvo aviso de 30 dias', ou null"
   },
+
   "valor": {
-    "total": "valor total como string ex: '50000.00' ou null",
-    "moeda": "BRL, USD etc ou null",
-    "formaPagamento": "descrição da forma de pagamento ou null"
+    "total": "valor total como string numérica ex: '84000.00', ou null",
+    "moeda": "BRL, USD, EUR etc, ou null",
+    "formaPagamento": "descrição objetiva da forma de pagamento, ou null",
+    "reajuste": "índice ou condição de reajuste se houver, ex: 'anual pelo IPCA', ou null"
   },
+
+  "penalidades": {
+    "multaInadimplemento": "percentual ou valor de multa por descumprimento, ou null",
+    "multaRescisao": "percentual ou valor de multa por rescisão antecipada, ou null",
+    "juros": "taxa de juros aplicável, ou null"
+  },
+
   "clausulasRelevantes": [
-    "lista de cláusulas importantes resumidas em 1 frase cada"
+    "resuma cada cláusula importante em 1 frase objetiva — máximo 6 itens"
   ],
+
   "alertas": [
-    "alertas sobre prazos críticos, penalidades, cláusulas de atenção"
-  ]
+    "aponte riscos, prazos críticos e obrigações importantes — máximo 6 itens, ordenados por criticidade"
+  ],
+
+  "statusExtracao": "completo | parcial | insuficiente — use 'parcial' se algum campo importante não foi encontrado, 'insuficiente' se o documento não parece ser um contrato"
 }
 
-Regras:
-- Use null para campos não encontrados no documento
-- Datas sempre em YYYY-MM-DD quando identificáveis
-- clausulasRelevantes e alertas: máximo 5 itens cada
-- Responda SOMENTE o JSON, sem nenhum texto adicional`;
+REGRAS DE EXTRAÇÃO:
+- Datas: converta para YYYY-MM-DD apenas quando explícitas (ex: "01 de maio de 2026" → "2026-05-01")
+- Datas relativas: NÃO tente converter — use o campo prazoRelativo
+- Valores: extraia apenas números, sem R$ ou símbolos (ex: "R$ 84.000,00" → "84000.00")
+- Alertas: priorize multas, vencimentos próximos, renovação automática e obrigações com prazo
+- Se o documento não for um contrato, retorne statusExtracao: "insuficiente" e null nos demais campos`;
 
 export class GeminiService {
   private client: GoogleGenerativeAI;
@@ -77,7 +99,7 @@ export class GeminiService {
         },
       ],
       generationConfig: {
-        temperature: 0.1,      // baixo para respostas consistentes
+        temperature: 0.1,
         responseMimeType: "application/json",
       },
     });
@@ -86,7 +108,6 @@ export class GeminiService {
 
     let extracted: ExtractedContractData;
     try {
-      // Remove possível wrapper de markdown caso o modelo ignore a instrução
       const cleaned = raw
         .replace(/^```json\s*/i, "")
         .replace(/^```\s*/i, "")
@@ -94,9 +115,19 @@ export class GeminiService {
         .trim();
 
       extracted = JSON.parse(cleaned) as ExtractedContractData;
-    } catch {
+
+      // Valida se o documento era realmente um contrato
+      if (extracted.statusExtracao === "insuficiente") {
+        throw new Error(
+          "O documento enviado não parece ser um contrato válido."
+        );
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("não parece ser")) {
+        throw err;
+      }
       throw new Error(
-        `Gemini retornou resposta não-JSON. Resposta bruta: ${raw.slice(0, 200)}`
+        `Gemini retornou resposta inválida. Resposta bruta: ${raw.slice(0, 200)}`
       );
     }
 

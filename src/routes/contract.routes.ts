@@ -5,36 +5,41 @@ import type { UploadContractReply } from "../types/contract.types.js";
 const pipeline = new ContractPipeline();
 
 export async function contractRoutes(app: FastifyInstance): Promise<void> {
-  /**
-   * POST /contracts/upload
-   * Recebe um PDF via multipart/form-data (campo: "file")
-   * Retorna os dados extraídos pelo Gemini
-   */
   app.post<{ Reply: UploadContractReply }>(
     "/contracts/upload",
     {
       schema: {
-  response: {
-    200: {
-      type: "object",
-      properties: {
-        ok: { type: "boolean" },
-        data: { 
-          type: "object",
-          additionalProperties: true
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              ok: { type: "boolean" },
+              data: { type: "object", additionalProperties: true },
+            },
+          },
+          400: {
+            type: "object",
+            properties: {
+              ok: { type: "boolean" },
+              message: { type: "string" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              ok: { type: "boolean" },
+              message: { type: "string" },
+            },
+          },
         },
       },
-    },
-  },
-},
     },
     async (
       request: FastifyRequest,
       reply: FastifyReply
     ): Promise<UploadContractReply> => {
-      // Obtém o arquivo do multipart
+      // Nenhum arquivo enviado
       const file = await request.file();
-
       if (!file) {
         return reply.status(400).send({
           ok: false,
@@ -42,12 +47,27 @@ export async function contractRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const result = await pipeline.run(file);
+      try {
+        const result = await pipeline.run(file);
+        return reply.status(200).send({ ok: true, data: result });
 
-      return reply.status(200).send({
-        ok: true,
-        data: result,
-      });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Erro desconhecido.";
+
+        // Erros de validação do PDF ou documento inválido → 400
+        const isClientError =
+          message.includes("Tipo de arquivo inválido") ||
+          message.includes("arquivo vazio") ||
+          message.includes("arquivo muito grande") ||
+          message.includes("não é um PDF válido") ||
+          message.includes("não parece ser um contrato");
+
+        const status = isClientError ? 400 : 500;
+
+        app.log.error({ err, filename: file.filename }, "Erro no pipeline de contratos");
+
+        return reply.status(status).send({ ok: false, message });
+      }
     }
   );
 }
