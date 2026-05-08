@@ -5,6 +5,7 @@ import multipart from '@fastify/multipart';
 import { prisma } from './lib/prisma.js';
 import { authRoutes } from './http/routes/auth-routes.js';
 import { contractRoutes } from './routes/contract.routes.js'
+import { startAlertJob } from "./jobs/alert.jobs.js";
 
 const app = fastify({ logger: true });
 
@@ -14,6 +15,7 @@ app.register(fastifyJwt, {
 
 app.register(multipart, { limits: { fileSize: 20 * 1024 * 1024}});
 app.register(authRoutes, { prefix: '/auth' });
+app.register(contractRoutes, { prefix: "/contracts" });
 app.register(contractRoutes).after((err) => {
   if (err) console.error('Erro ao registrar contractRoutes:', err);
 });
@@ -39,4 +41,5 @@ const start = async () => {
   }
 };
 
+startAlertJob();
 start();
