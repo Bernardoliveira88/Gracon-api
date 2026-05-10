@@ -33,12 +33,15 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
+    "node-cron": "^4.2.1",
     "pg": "^8.20.0",
+    "resend": "^6.12.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^25.6.0",
+    "@types/node-cron": "^3.0.11",
     "@vitest/coverage-v8": "^4.1.5",
     "prisma": "^7.8.0",
     "tsx": "^4.21.0",

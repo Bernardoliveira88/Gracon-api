@@ -17,52 +17,70 @@ Siga o schema exatamente — não adicione nem remova campos.
 
 {
   "titulo": "título ou tipo do contrato conforme escrito no documento, ou null",
-
   "partes": {
     "contratante": "nome completo de quem contrata (geralmente quem paga), ou null",
     "contratado": "nome completo de quem presta o serviço ou fornece, ou null"
   },
-
   "objeto": "descrição do objeto em 1-3 frases, extraída diretamente do contrato, ou null",
-
   "prazos": {
     "inicio": "data de início em YYYY-MM-DD se explícita, ou null",
     "termino": "data de término em YYYY-MM-DD se explícita, ou null",
-    "vigencia": "duração textual como está no contrato, ex: '12 meses', '1 ano', ou null",
+    "vigencia": "duração textual como está no contrato, ex: '12 meses', ou null",
     "prazoRelativo": "se o prazo depende de um evento, descreva, ex: '90 dias após assinatura', ou null",
-    "renovacao": "condição de renovação resumida, ex: 'automática por igual período salvo aviso de 30 dias', ou null"
+    "renovacao": "condição de renovação resumida ou null",
+    "renovacaoAutomatica": true ou false
   },
-
   "valor": {
     "total": "valor total como string numérica ex: '84000.00', ou null",
     "moeda": "BRL, USD, EUR etc, ou null",
     "formaPagamento": "descrição objetiva da forma de pagamento, ou null",
-    "reajuste": "índice ou condição de reajuste se houver, ex: 'anual pelo IPCA', ou null"
+    "reajuste": "índice ou condição de reajuste se houver, ex: 'anual pelo IPCA', ou null",
+    "dataReajuste": "data do próximo reajuste em YYYY-MM-DD se explícita, ou null"
   },
-
   "penalidades": {
     "multaInadimplemento": "percentual ou valor de multa por descumprimento, ou null",
     "multaRescisao": "percentual ou valor de multa por rescisão antecipada, ou null",
     "juros": "taxa de juros aplicável, ou null"
   },
-
-  "clausulasRelevantes": [
-    "resuma cada cláusula importante em 1 frase objetiva — máximo 6 itens"
-  ],
-
-  "alertas": [
-    "aponte riscos, prazos críticos e obrigações importantes — máximo 6 itens, ordenados por criticidade"
-  ],
-
-  "statusExtracao": "completo | parcial | insuficiente — use 'parcial' se algum campo importante não foi encontrado, 'insuficiente' se o documento não parece ser um contrato"
+  "clausulasRelevantes": ["máximo 6 itens"],
+  "alertas": ["máximo 6 itens, ordenados por criticidade"],
+  "statusExtracao": "completo | parcial | insuficiente"
 }
 
-REGRAS DE EXTRAÇÃO:
-- Datas: converta para YYYY-MM-DD apenas quando explícitas (ex: "01 de maio de 2026" → "2026-05-01")
-- Datas relativas: NÃO tente converter — use o campo prazoRelativo
-- Valores: extraia apenas números, sem R$ ou símbolos (ex: "R$ 84.000,00" → "84000.00")
-- Alertas: priorize multas, vencimentos próximos, renovação automática e obrigações com prazo
-- Se o documento não for um contrato, retorne statusExtracao: "insuficiente" e null nos demais campos`;
+REGRAS:
+- Datas: converta para YYYY-MM-DD apenas quando explícitas
+- Datas relativas: NÃO converta — use prazoRelativo
+- Valores: apenas números, sem R$ ou símbolos
+- Se não for contrato: statusExtracao "insuficiente" e null nos demais campos`;
+
+export interface GeminiExtractedData {
+  titulo: string | null;
+  partes: { contratante: string | null; contratado: string | null };
+  objeto: string | null;
+  prazos: {
+    inicio: string | null;
+    termino: string | null;
+    vigencia: string | null;
+    prazoRelativo: string | null;
+    renovacao: string | null;
+    renovacaoAutomatica: boolean;
+  };
+  valor: {
+    total: string | null;
+    moeda: string | null;
+    formaPagamento: string | null;
+    reajuste: string | null;
+    dataReajuste: string | null;
+  };
+  penalidades: {
+    multaInadimplemento: string | null;
+    multaRescisao: string | null;
+    juros: string | null;
+  };
+  clausulasRelevantes: string[];
+  alertas: string[];
+  statusExtracao: "completo" | "parcial" | "insuficiente";
+}
 
 export class GeminiService {
   private client: GoogleGenerativeAI;
@@ -88,12 +106,7 @@ export class GeminiService {
         {
           role: 'user',
           parts: [
-            {
-              inlineData: {
-                mimeType,
-                data: pdfBase64,
-              },
-            },
+            { inlineData: { mimeType, data: pdfBase64 } },
             { text: EXTRACTION_PROMPT },
           ],
         },
@@ -106,7 +119,7 @@ export class GeminiService {
 
     const raw = result.response.text();
 
-    let extracted: ExtractedContractData;
+    let extracted: GeminiExtractedData;
     try {
       const cleaned = raw
         .replace(/^```json\s*/i, '')
@@ -114,7 +127,7 @@ export class GeminiService {
         .replace(/```\s*$/i, '')
         .trim();
 
-      extracted = JSON.parse(cleaned) as ExtractedContractData;
+      extracted = JSON.parse(cleaned) as GeminiExtractedData;
 
       // Valida se o documento era realmente um contrato
       if (extracted.statusExtracao === 'insuficiente') {
