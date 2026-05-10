@@ -10,16 +10,26 @@ datasource db {
 // MÓDULO 1: AUTH & WORKSPACE
 // ==========================================
 
+enum Role {
+  ADMIN
+  LEGAL
+  FINANCE
+  VIEWER
+}
+
 model User {
   id            String          @id @default(uuid())
   email         String          @unique
   name          String
   password_hash String
   created_at    DateTime        @default(now())
-  
+  updated_at    DateTime        @updatedAt
+
   workspaces    WorkspaceUser[]
   notes         ContractNote[]
   alerts        Alert[]
+
+  @@map("users")
 }
 
 model Workspace {
@@ -27,56 +37,89 @@ model Workspace {
   name       String
   plan       String   @default("free")
   created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   users      WorkspaceUser[]
   invites    Invite[]
   contracts  Contract[]
   configs    AlertConfig[]
+
+  @@map("workspaces")
 }
 
 model WorkspaceUser {
   user_id      String
   workspace_id String
-  role         String   // admin, legal, finance, viewer
+  role         Role   @default(VIEWER)
 
   user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
 
   @@id([user_id, workspace_id])
+  @@map("workspace_users")
 }
 
 model Invite {
   id           String    @id @default(uuid())
   workspace_id String
   email        String
-  role         String
+  role         Role      @default(VIEWER)
   token        String    @unique
   expires_at   DateTime
-  
+
   workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  @@index([workspace_id])
+  @@index([email])
+  @@map("invites")
 }
 
 // ==========================================
 // MÓDULO 2: CONTRATOS & EXTRAÇÃO (MVP CORE)
 // ==========================================
 
-model Contract {
-  id          String   @id @default(uuid())
-  workspace_id String
-  title       String
-  status      String   @default("processing") // processing, active, expiring, expired
-  file_url    String
-  created_at  DateTime @default(now())
+enum ContractStatus {
+  PROCESSING
+  ACTIVE
+  EXPIRING
+  EXPIRED
+}
 
-  workspace   Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
-  
-  data        ExtractedData?
-  parties     ContractParty[]
-  clauses     ContractClause[]
-  versions    ContractVersion[]
-  notes       ContractNote[]
-  tags        ContractTag[]
-  events      TimelineEvent[]
+enum PartyType {
+  CONTRACTOR
+  HIRED
+}
+
+enum ClauseType {
+  OBLIGATION
+  PENALTY
+  TERMINATION
+  GENERAL
+}
+
+model Contract {
+  id           String         @id @default(uuid())
+  workspace_id String
+  title        String
+  status       ContractStatus @default(PROCESSING)
+  file_url     String
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
+
+  workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  data         ExtractedData?
+  parties      ContractParty[]
+  clauses      ContractClause[]
+  versions     ContractVersion[]
+  notes        ContractNote[]
+  tags         ContractTag[]
+  events       TimelineEvent[]
+  alerts       Alert[]
+
+  @@index([workspace_id])
+  @@index([workspace_id, status])
+  @@map("contracts")
 }
 
 model ExtractedData {
@@ -92,26 +135,34 @@ model ExtractedData {
   raw_gemini_json    Json?
 
   contract           Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+
+  @@map("extracted_data")
 }
 
 model ContractParty {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   contract_id String
   name        String
   cnpj        String?
-  type        String   // contractor, hired
+  type        PartyType
 
   contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+
+  @@index([contract_id])
+  @@map("contract_parties")
 }
 
 model ContractClause {
-  id          String   @id @default(uuid())
+  id          String     @id @default(uuid())
   contract_id String
-  type        String   // obligation, penalty, termination
+  type        ClauseType
   content     String
   page_ref    Int?
 
   contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+
+  @@index([contract_id])
+  @@map("contract_clauses")
 }
 
 model ContractVersion {
@@ -122,6 +173,9 @@ model ContractVersion {
   created_at  DateTime @default(now())
 
   contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+
+  @@index([contract_id])
+  @@map("contract_versions")
 }
 
 model ContractNote {
@@ -133,6 +187,9 @@ model ContractNote {
 
   contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([contract_id])
+  @@map("contract_notes")
 }
 
 model ContractTag {
@@ -141,32 +198,58 @@ model ContractTag {
   tag         String
 
   contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+
+  @@index([contract_id])
+  @@map("contract_tags")
 }
 
 // ==========================================
 // MÓDULO 3: TIMELINE & ALERTAS
 // ==========================================
 
+enum EventType {
+  RENEWAL
+  EXPIRATION
+  PAYMENT
+  CUSTOM
+}
+
+enum AlertChannel {
+  EMAIL
+  PUSH
+  SMS
+}
+
 model TimelineEvent {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   contract_id   String
-  type          String
+  type          EventType
   scheduled_for DateTime
   description   String
-  resolved      Boolean  @default(false)
+  resolved      Boolean   @default(false)
 
   contract      Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+
+  @@index([contract_id])
+  @@index([scheduled_for])
+  @@map("timeline_events")
 }
 
 model Alert {
-  id          String   @id @default(uuid())
+  id          String       @id @default(uuid())
   user_id     String
+  contract_id String
   type        String
   days_before Int
   sent_at     DateTime?
-  channel     String   @default("email")
+  channel     AlertChannel @default(EMAIL)
 
   user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([contract_id])
+  @@map("alerts")
 }
 
 model AlertConfig {
@@ -177,4 +260,7 @@ model AlertConfig {
   enabled      Boolean  @default(true)
 
   workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  @@index([workspace_id])
+  @@map("alert_configs")
 }
