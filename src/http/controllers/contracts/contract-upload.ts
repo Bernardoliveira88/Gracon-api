@@ -50,7 +50,7 @@ export async function uploadContract(
       data: {
         workspace_id: parsed.data.workspace_id,
         title: extracted.titulo ?? pdf.filename,
-        status: "active",
+        status: "ACTIVE",
         file_url: pdf.filename,
       },
     });
@@ -70,12 +70,12 @@ export async function uploadContract(
       },
     });
 
-    const parties = [];
+    const parties: { contract_id: string; name: string; type: "CONTRACTOR" | "HIRED" }[] = [];
     if (extracted.partes.contratante) {
-      parties.push({ contract_id: contract.id, name: extracted.partes.contratante, type: "contractor" });
+      parties.push({ contract_id: contract.id, name: extracted.partes.contratante, type: "CONTRACTOR" });
     }
     if (extracted.partes.contratado) {
-      parties.push({ contract_id: contract.id, name: extracted.partes.contratado, type: "hired" });
+      parties.push({ contract_id: contract.id, name: extracted.partes.contratado, type: "HIRED" });
     }
     if (parties.length > 0) {
       await prisma.contractParty.createMany({ data: parties });

@@ -116,6 +116,7 @@ model Contract {
   tags         ContractTag[]
   events       TimelineEvent[]
   alerts       Alert[]
+  embedding    ContractEmbedding?
 
   @@index([workspace_id])
   @@index([workspace_id, status])
@@ -263,4 +264,20 @@ model AlertConfig {
 
   @@index([workspace_id])
   @@map("alert_configs")
+}
+
+// ==========================================
+// MÓDULO 4: BUSCA SEMÂNTICA (EMBEDDINGS)
+// ==========================================
+
+model ContractEmbedding {
+  id           String   @id @default(uuid())
+  contract_id  String   @unique
+  content_text String
+  embedding    Unsupported("vector(768)")
+  created_at   DateTime @default(now())
+
+  contract     Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+
+  @@map("contract_embeddings")
 }

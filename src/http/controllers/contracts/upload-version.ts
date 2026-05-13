@@ -1,12 +1,26 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ContractPipeline } from '../../../pipelines/contract.pipeline.js';
 import { ContractService } from '../../../services/contract.service.js';
+import { prisma } from '../../../lib/prisma.js';
 import { generateTimeline } from './timeline.js';
 
 const contractService = new ContractService();
 
-export async function uploadContract(request: FastifyRequest, reply: FastifyReply) {
+export async function uploadContractVersion(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = request.params as { id: string };
   const workspaceId = request.headers['x-workspace-id'] as string;
+
+  // Verifica se o contrato existe e pertence ao workspace
+  const contract = await prisma.contract.findUnique({
+    where: { id },
+  });
+
+  if (!contract || contract.workspace_id !== workspaceId) {
+    return reply.status(404).send({
+      ok: false,
+      message: 'Contrato não encontrado ou não pertence a este workspace.',
+    });
+  }
 
   const file = await request.file();
   if (!file) {
@@ -20,22 +34,22 @@ export async function uploadContract(request: FastifyRequest, reply: FastifyRepl
     const pipeline = new ContractPipeline();
     const result = await pipeline.run(file);
 
-    // Persiste no banco de dados (era o que faltava antes!)
-    const contract = await contractService.create({
-      workspaceId,
-      title: result.filename,
+    // Adiciona nova versão (substitui os dados, salva novo arquivo e histórico)
+    const updatedContract = await contractService.addVersion(id, {
+      title: result.filename, // Ou manter o título antigo, mas a pipeline usa o filename como fallback
       fileUrl: result.filename, // MVP: filename como referência
       pipelineResult: result,
     });
 
     if (result.extractedData) {
-      await generateTimeline(contract.id, result.extractedData as any);
+      await prisma.timelineEvent.deleteMany({ where: { contract_id: id } });
+      await generateTimeline(id, result.extractedData as any);
     }
 
     return reply.status(201).send({
       ok: true,
       data: {
-        contract,
+        contract: updatedContract,
         extraction: result.extractedData,
       },
     });
@@ -51,7 +65,7 @@ export async function uploadContract(request: FastifyRequest, reply: FastifyRepl
 
     const status = isClientError ? 400 : 500;
 
-    request.log.error({ err, filename: file.filename }, 'Erro no pipeline de contratos');
+    request.log.error({ err, filename: file.filename, contractId: id }, 'Erro no pipeline de nova versão');
 
     return reply.status(status).send({ ok: false, message });
   }
