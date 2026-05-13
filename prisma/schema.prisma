@@ -28,6 +28,7 @@ model User {
   workspaces    WorkspaceUser[]
   notes         ContractNote[]
   alerts        Alert[]
+  approvals     ContractApproval[]
 
   @@map("users")
 }
@@ -80,9 +81,12 @@ model Invite {
 
 enum ContractStatus {
   PROCESSING
+  PENDING_LEGAL        
+  PENDING_FINANCE      
   ACTIVE
   EXPIRING
   EXPIRED
+  IN_REVIEW            
 }
 
 enum PartyType {
@@ -116,6 +120,7 @@ model Contract {
   tags         ContractTag[]
   events       TimelineEvent[]
   alerts       Alert[]
+  approvals    ContractApproval[]
 
   @@index([workspace_id])
   @@index([workspace_id, status])
@@ -123,14 +128,14 @@ model Contract {
 }
 
 model ExtractedData {
-  id                 String   @id @default(uuid())
-  contract_id        String   @unique
+  id                 String    @id @default(uuid())
+  contract_id        String    @unique
   start_date         DateTime?
   end_date           DateTime?
   value              Float?
   readjustment_index String?
   readjustment_date  DateTime?
-  auto_renewal       Boolean  @default(false)
+  auto_renewal       Boolean   @default(false)
   notice_days        Int?
   raw_gemini_json    Json?
 
@@ -263,4 +268,34 @@ model AlertConfig {
 
   @@index([workspace_id])
   @@map("alert_configs")
+}
+
+// ==========================================
+// MÓDULO 4: APROVAÇÕES
+// ==========================================
+
+enum ApprovalStep {
+  LEGAL
+  FINANCE
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+model ContractApproval {
+  id          String           @id @default(uuid())
+  contract_id String
+  user_id     String
+  step        ApprovalStep
+  decision    ApprovalDecision
+  comment     String?
+  decided_at  DateTime         @default(now())
+
+  contract    Contract @relation(fields: [contract_id], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([contract_id])
+  @@map("contract_approvals")
 }
