@@ -1,9 +1,10 @@
 import { prisma } from "../../../lib/prisma.js";
 import type { GeminiExtractedData } from "../../../services/gemini.service.js";
+import { EventType } from "@prisma/client";
 
 interface TimelineEventInput {
   contract_id: string;
-  type: string;
+  type: EventType;
   scheduled_for: Date;
   description: string;
 }
@@ -20,7 +21,7 @@ export async function generateTimeline(
     if (!isNaN(terminoDate.getTime())) {
       events.push({
         contract_id: contractId,
-        type: "vencimento",
+        type: EventType.EXPIRATION,
         scheduled_for: terminoDate,
         description: `Vencimento do contrato em ${formatDate(terminoDate)}.`,
       });
@@ -29,7 +30,7 @@ export async function generateTimeline(
       const alerta30 = subtractDays(terminoDate, 30);
       events.push({
         contract_id: contractId,
-        type: "alerta_vencimento",
+        type: EventType.CUSTOM,
         scheduled_for: alerta30,
         description: `Alerta: contrato vence em 30 dias (${formatDate(terminoDate)}).`,
       });
@@ -38,7 +39,7 @@ export async function generateTimeline(
       const alerta7 = subtractDays(terminoDate, 7);
       events.push({
         contract_id: contractId,
-        type: "alerta_vencimento",
+        type: EventType.CUSTOM,
         scheduled_for: alerta7,
         description: `Alerta urgente: contrato vence em 7 dias (${formatDate(terminoDate)}).`,
       });
@@ -52,7 +53,7 @@ export async function generateTimeline(
       // Evento de renovação no dia do vencimento
       events.push({
         contract_id: contractId,
-        type: "renovacao",
+        type: EventType.RENEWAL,
         scheduled_for: terminoDate,
         description: `Renovação automática prevista. Condição: ${data.prazos.renovacao ?? "conforme contrato"}.`,
       });
@@ -61,7 +62,7 @@ export async function generateTimeline(
       const alertaRenovacao = subtractDays(terminoDate, 30);
       events.push({
         contract_id: contractId,
-        type: "alerta_renovacao",
+        type: EventType.CUSTOM,
         scheduled_for: alertaRenovacao,
         description: `Decisão sobre renovação automática necessária em até 30 dias.`,
       });
@@ -74,7 +75,7 @@ export async function generateTimeline(
     if (!isNaN(reajusteDate.getTime())) {
       events.push({
         contract_id: contractId,
-        type: "reajuste",
+        type: EventType.PAYMENT,
         scheduled_for: reajusteDate,
         description: `Reajuste de valor previsto. Índice: ${data.valor.reajuste ?? "conforme contrato"}.`,
       });
@@ -83,7 +84,7 @@ export async function generateTimeline(
       const alertaReajuste = subtractDays(reajusteDate, 15);
       events.push({
         contract_id: contractId,
-        type: "alerta_reajuste",
+        type: EventType.CUSTOM,
         scheduled_for: alertaReajuste,
         description: `Alerta: reajuste contratual em 15 dias (${formatDate(reajusteDate)}).`,
       });
@@ -92,7 +93,7 @@ export async function generateTimeline(
     // Reajuste existe mas sem data explícita — registra como evento informativo
     events.push({
       contract_id: contractId,
-      type: "reajuste",
+      type: EventType.PAYMENT,
       scheduled_for: new Date(), // data atual como referência
       description: `Reajuste previsto em contrato: ${data.valor.reajuste}. Data não especificada.`,
     });
@@ -104,7 +105,7 @@ export async function generateTimeline(
     if (!isNaN(inicioDate.getTime())) {
       events.push({
         contract_id: contractId,
-        type: "inicio",
+        type: EventType.CUSTOM,
         scheduled_for: inicioDate,
         description: `Início de vigência do contrato em ${formatDate(inicioDate)}.`,
       });

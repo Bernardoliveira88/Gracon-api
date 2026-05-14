@@ -4,7 +4,7 @@ import fastifyJwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import { prisma } from './lib/prisma.js';
 import { authRoutes } from './http/routes/auth-routes.js';
-import { contractRoutes } from './routes/contract.routes.js'
+import { contractRoutes } from './http/routes/contract-routes.js'
 import { startAlertJob } from "./jobs/alert.jobs.js";
 
 const app = fastify({ logger: true });
@@ -33,8 +33,8 @@ app.get('/', async (request, reply) => {
 
 const start = async () => {
   try {
-    await app.listen({ port: env.PORT, host: '0.0.0.0' });
-    console.log(`🚀 Servidor rodando na porta ${env.PORT}`);
+    await app.listen({ port: Number(process.env.PORT) || 3333, host: '0.0.0.0' });
+    console.log(`🚀 Servidor rodando na porta ${process.env.PORT || 3333}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);
