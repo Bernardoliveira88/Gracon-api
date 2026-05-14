@@ -14,6 +14,7 @@ export interface ExtractedContractData {
     vigencia: string | null;
     prazoRelativo: string | null;
     renovacao: string | null;
+    renovacaoAutomatica: boolean;
   };
 
   valor: {
@@ -21,6 +22,7 @@ export interface ExtractedContractData {
     moeda: string | null;
     formaPagamento: string | null;
     reajuste: string | null;
+    dataReajuste: string | null;
   };
 
   penalidades: {
