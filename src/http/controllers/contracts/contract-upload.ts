@@ -1,3 +1,4 @@
+import { requestApproval } from "./request-approval.js";
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { prisma } from "../../../lib/prisma.js";
@@ -82,6 +83,7 @@ export async function uploadContract(
     }
 
     await generateTimeline(contract.id, extracted);
+    await requestApproval(contract.id);
 
     const timeline = await prisma.timelineEvent.findMany({
       where: { contract_id: contract.id },

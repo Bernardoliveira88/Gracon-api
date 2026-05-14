@@ -3,7 +3,6 @@ import { prisma } from "../lib/prisma.js";
 import { sendAlertEmail } from "../services/email.service.js";
 
 export function startAlertJob(): void {
-  // Roda todo dia às 08:00
   cron.schedule("0 8 * * *", async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
