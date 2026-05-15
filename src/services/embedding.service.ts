@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../lib/prisma.js';
+import { env } from '../config/env.js';
 
 const EMBEDDING_MODEL = 'text-embedding-004';
 const VECTOR_DIMENSIONS = 768;
@@ -8,11 +9,7 @@ export class EmbeddingService {
   private client: GoogleGenAI;
 
   constructor() {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY não configurada.');
-    }
-    this.client = new GoogleGenAI({ apiKey });
+    this.client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
   }
 
   /**
@@ -59,7 +56,7 @@ export class EmbeddingService {
 
     if (contract.parties.length > 0) {
       const partiesText = contract.parties
-        .map((p) => `${p.type}: ${p.name}`)
+        .map((p: { type: string; name: string }) => `${p.type}: ${p.name}`)
         .join(', ');
       parts.push(`Partes: ${partiesText}`);
     }
@@ -98,13 +95,13 @@ export class EmbeddingService {
 
     if (contract.clauses.length > 0) {
       const clausesText = contract.clauses
-        .map((c) => `[${c.type}] ${c.content}`)
+        .map((c: { type: string; content: string }) => `[${c.type}] ${c.content}`)
         .join('; ');
       parts.push(`Cláusulas: ${clausesText}`);
     }
 
     if (contract.tags.length > 0) {
-      parts.push(`Tags: ${contract.tags.map((t) => t.tag).join(', ')}`);
+      parts.push(`Tags: ${contract.tags.map((t: { tag: string }) => t.tag).join(', ')}`);
     }
 
     const contentText = parts.join('\n');

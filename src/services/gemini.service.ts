@@ -1,5 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import type { ExtractedContractData } from '../types/contract.types.js';
+import { env } from '../config/env.js';
 
 const MODEL = 'gemini-2.5-flash';
 
@@ -83,25 +84,18 @@ export interface GeminiExtractedData {
 }
 
 export class GeminiService {
-  private client: GoogleGenerativeAI;
+  private client: GoogleGenAI;
 
-  constructor(apiKey: string) {
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY não configurada.');
-    }
-    this.client = new GoogleGenerativeAI(apiKey);
+  constructor() {
+    this.client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
   }
 
   async extractContractData(
     pdfBase64: string,
     mimeType: string,
   ): Promise<{ extracted: ExtractedContractData; raw: string }> {
-    const model = this.client.getGenerativeModel({
+    const result = await this.client.models.generateContent({
       model: MODEL,
-      systemInstruction: SYSTEM_PROMPT,
-    });
-
-    const result = await model.generateContent({
       contents: [
         {
           role: 'user',
@@ -111,13 +105,14 @@ export class GeminiService {
           ],
         },
       ],
-      generationConfig: {
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
         temperature: 0.1,
         responseMimeType: 'application/json',
       },
     });
 
-    const raw = result.response.text();
+    const raw = result.text ?? '';
 
     let extracted: GeminiExtractedData;
     try {

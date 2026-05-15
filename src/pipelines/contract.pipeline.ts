@@ -8,9 +8,8 @@ export class ContractPipeline {
   private geminiService: GeminiService;
 
   constructor() {
-    const apiKey = process.env.GEMINI_API_KEY ?? "";
     this.pdfService = new PdfService();
-    this.geminiService = new GeminiService(apiKey);
+    this.geminiService = new GeminiService();
   }
 
   async run(file: MultipartFile): Promise<PipelineResult> {

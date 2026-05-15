@@ -43,7 +43,7 @@ export async function uploadContractVersion(request: FastifyRequest, reply: Fast
 
     if (result.extractedData) {
       await prisma.timelineEvent.deleteMany({ where: { contract_id: id } });
-      await generateTimeline(id, result.extractedData as any);
+      await generateTimeline(id, result.extractedData);
     }
 
     return reply.status(201).send({

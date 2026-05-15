@@ -29,7 +29,7 @@ export async function uploadContract(request: FastifyRequest, reply: FastifyRepl
     });
 
     if (result.extractedData) {
-      await generateTimeline(contract.id, result.extractedData as any);
+      await generateTimeline(contract.id, result.extractedData);
     }
 
     return reply.status(201).send({

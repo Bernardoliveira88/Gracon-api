@@ -1,5 +1,5 @@
 import { prisma } from "../../../lib/prisma.js";
-import type { GeminiExtractedData } from "../../../services/gemini.service.js";
+import type { ExtractedContractData } from "../../../types/contract.types.js";
 import { EventType } from "@prisma/client";
 
 interface TimelineEventInput {
@@ -11,7 +11,7 @@ interface TimelineEventInput {
 
 export async function generateTimeline(
   contractId: string,
-  data: GeminiExtractedData
+  data: ExtractedContractData
 ): Promise<void> {
   const events: TimelineEventInput[] = [];
 

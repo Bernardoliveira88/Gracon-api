@@ -37,7 +37,7 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
     const workspace = await tx.workspace.create({
       data: {
         name: workspace_name,
-        plan: 'free',
+        plan: 'FREE',
       },
     });
 
