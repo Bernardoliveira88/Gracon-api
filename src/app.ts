@@ -7,8 +7,7 @@ import { authRoutes } from './http/routes/auth-routes.js';
 import { workspaceRoutes } from './http/routes/workspace-routes.js';
 import { contractRoutes } from './http/routes/contract-routes.js';
 
-// Importa a augmentação de tipos do JWT
-import './types/fastify.d.js';
+// Augmentação de tipos do JWT está em ./types/fastify.d.ts (carregada via tsconfig)
 
 export function buildApp() {
   const app = fastify({
