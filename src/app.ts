@@ -11,10 +11,12 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 
 // Augmentação de tipos do JWT está em ./types/fastify.d.ts (carregada via tsconfig)
 
-export function buildApp() {
+export async function buildApp() {
   const app = fastify({
     logger: env.NODE_ENV !== 'test',
   });
+
+
 
   // Plugins
   app.register(fastifyJwt, {
