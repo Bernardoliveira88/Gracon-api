@@ -1,0 +1,31 @@
+# ==========================================
+# Render Blueprint — NexusDoc API
+# https://render.com/docs/blueprint-spec
+# ==========================================
+# O banco PostgreSQL com pgvector será provido externamente
+# (Neon, Supabase, ou Render Starter) e configurado via DATABASE_URL.
+
+services:
+  - type: web
+    name: nexusdoc-api
+    runtime: docker
+    repo: https://github.com/Repositorio-de-projetos-da-faculdade/nexusDoc-api
+    branch: jhon-back
+    plan: free
+    dockerfilePath: ./dockerfile
+    healthCheckPath: /
+    envVars:
+      # DATABASE_URL — definir manualmente no dashboard (Neon / Supabase / Render Starter)
+      - key: DATABASE_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      # Secrets — definir manualmente no dashboard do Render
+      - key: JWT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
