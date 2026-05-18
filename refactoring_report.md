@@ -337,7 +337,7 @@ Fluxo completo em transação atômica:
 
 ### 6.4 package.json
 - Adicionados scripts: `test`, `test:watch`, `test:coverage`
-- Corrigido path do `start`: `dist/src/server.js` (antes: `dist/server.js`)
+- Corrigido path do `start`: `dist/src/server.ts` (antes: `dist/server.ts`)
 
 ---
 

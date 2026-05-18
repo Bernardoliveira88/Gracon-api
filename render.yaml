@@ -10,7 +10,7 @@ services:
     name: nexusdoc-api
     runtime: docker
     repo: https://github.com/Repositorio-de-projetos-da-faculdade/nexusDoc-api
-    branch: jhon-back
+    branch: main
     plan: free
     dockerfilePath: ./dockerfile
     healthCheckPath: /
