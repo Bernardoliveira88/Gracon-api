@@ -1,8 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
+import crypto from 'crypto';
 
-const EMBEDDING_MODEL = 'models/text-embedding-004';
+// Alterado para o modelo estável do novo SDK que mantém as mesmas 768 dimensões do pgvector
+const EMBEDDING_MODEL = 'text-multilingual-embedding-002';
 const VECTOR_DIMENSIONS = 768;
 
 export class EmbeddingService {
