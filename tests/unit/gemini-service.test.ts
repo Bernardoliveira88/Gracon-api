@@ -15,12 +15,14 @@ const VALID_RESPONSE: ExtractedContractData = {
     vigencia: '12 meses',
     prazoRelativo: null,
     renovacao: 'automática por igual período',
+    renovacaoAutomatica: true,
   },
   valor: {
     total: '84000.00',
     moeda: 'BRL',
     formaPagamento: 'Mensal, até o dia 10',
     reajuste: 'anual pelo IPCA',
+    dataReajuste: null,
   },
   penalidades: {
     multaInadimplemento: '10%',
@@ -40,12 +42,12 @@ const VALID_RESPONSE: ExtractedContractData = {
 // Mock generateContent como variável acessível
 const mockGenerateContent = vi.fn();
 
-vi.mock('@google/generative-ai', () => {
+vi.mock('@google/genai', () => {
   return {
-    GoogleGenerativeAI: class {
-      getGenerativeModel() {
-        return { generateContent: mockGenerateContent };
-      }
+    GoogleGenAI: class {
+      models = {
+        generateContent: mockGenerateContent,
+      };
     },
   };
 });
@@ -55,21 +57,17 @@ describe('GeminiService', () => {
     vi.clearAllMocks();
   });
 
-  it('deve lançar erro se a API key não for fornecida', () => {
-    expect(() => new GeminiService('')).toThrow('GEMINI_API_KEY não configurada');
-  });
-
-  it('deve criar instância com API key válida', () => {
-    const service = new GeminiService('valid-key');
+  it('deve criar instância da GeminiService', () => {
+    const service = new GeminiService();
     expect(service).toBeDefined();
   });
 
   it('deve fazer parse correto de resposta JSON do Gemini', async () => {
     mockGenerateContent.mockResolvedValueOnce({
-      response: { text: () => JSON.stringify(VALID_RESPONSE) },
+      text: JSON.stringify(VALID_RESPONSE),
     });
 
-    const service = new GeminiService('valid-key');
+    const service = new GeminiService();
     const result = await service.extractContractData('base64pdf', 'application/pdf');
 
     expect(result.extracted.titulo).toBe('Contrato de Prestação de Serviços');
@@ -80,10 +78,10 @@ describe('GeminiService', () => {
   it('deve lançar erro se o documento não for um contrato', async () => {
     const insufficientResponse = { ...VALID_RESPONSE, statusExtracao: 'insuficiente' };
     mockGenerateContent.mockResolvedValueOnce({
-      response: { text: () => JSON.stringify(insufficientResponse) },
+      text: JSON.stringify(insufficientResponse),
     });
 
-    const service = new GeminiService('valid-key');
+    const service = new GeminiService();
 
     await expect(
       service.extractContractData('base64pdf', 'application/pdf'),
@@ -92,10 +90,10 @@ describe('GeminiService', () => {
 
   it('deve lançar erro se o Gemini retornar JSON inválido', async () => {
     mockGenerateContent.mockResolvedValueOnce({
-      response: { text: () => 'isso não é JSON' },
+      text: 'isso não é JSON',
     });
 
-    const service = new GeminiService('valid-key');
+    const service = new GeminiService();
 
     await expect(
       service.extractContractData('base64pdf', 'application/pdf'),

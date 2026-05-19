@@ -11,11 +11,108 @@ export async function workspaceRoutes(app: FastifyInstance) {
   // Todas as rotas de workspace precisam estar autenticadas
   app.addHook('onRequest', verifyJWT);
 
-  // Rota para aceitar convite (só precisa estar logado, não precisa de Role no workspace)
-  app.post('/invites/:token/accept', acceptInvite);
+  app.post(
+    '/invites/:token/accept',
+    {
+      schema: {
+        tags: ['Workspaces'],
+        summary: 'Aceitar um convite para um workspace',
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: 'object',
+          properties: {
+            token: { type: 'string', format: 'uuid' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: { message: { type: 'string' } },
+          },
+        },
+      },
+    },
+    acceptInvite
+  );
 
-  // Somente ADMIN pode gerenciar membros
-  app.post('/invites', { preHandler: [verifyUserRole(Role.ADMIN)] }, inviteMember);
-  app.patch('/members/:userId/role', { preHandler: [verifyUserRole(Role.ADMIN)] }, updateRole);
-  app.delete('/members/:userId', { preHandler: [verifyUserRole(Role.ADMIN)] }, removeMember);
+  app.post(
+    '/invites',
+    {
+      preHandler: [verifyUserRole(Role.ADMIN)],
+      schema: {
+        tags: ['Workspaces'],
+        summary: 'Convidar um membro para o workspace',
+        security: [{ bearerAuth: [] }, { workspaceId: [] }],
+        body: {
+          type: 'object',
+          required: ['email', 'role'],
+          properties: {
+            email: { type: 'string', format: 'email' },
+            role: { type: 'string', enum: ['ADMIN', 'LEGAL', 'FINANCE', 'VIEWER'] },
+          },
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' },
+              token: { type: 'string', format: 'uuid' },
+            },
+          },
+        },
+      },
+    },
+    inviteMember
+  );
+
+  app.patch(
+    '/members/:userId/role',
+    {
+      preHandler: [verifyUserRole(Role.ADMIN)],
+      schema: {
+        tags: ['Workspaces'],
+        summary: 'Atualizar o papel de um membro do workspace',
+        security: [{ bearerAuth: [] }, { workspaceId: [] }],
+        params: {
+          type: 'object',
+          properties: {
+            userId: { type: 'string', format: 'uuid' },
+          },
+        },
+        body: {
+          type: 'object',
+          required: ['role'],
+          properties: {
+            role: { type: 'string', enum: ['ADMIN', 'LEGAL', 'FINANCE', 'VIEWER'] },
+          },
+        },
+        response: {
+          204: { type: 'null' },
+        },
+      },
+    },
+    updateRole
+  );
+
+  app.delete(
+    '/members/:userId',
+    {
+      preHandler: [verifyUserRole(Role.ADMIN)],
+      schema: {
+        tags: ['Workspaces'],
+        summary: 'Remover um membro do workspace',
+        security: [{ bearerAuth: [] }, { workspaceId: [] }],
+        params: {
+          type: 'object',
+          properties: {
+            userId: { type: 'string', format: 'uuid' },
+          },
+        },
+        response: {
+          204: { type: 'null' },
+        },
+      },
+    },
+    removeMember
+  );
 }

@@ -25,6 +25,9 @@ vi.mock('../../src/lib/prisma.js', () => {
     contractClause: {
       createMany: vi.fn().mockResolvedValue({ count: 3 }),
     },
+    contractVersion: {
+      create: vi.fn().mockResolvedValue({ id: 'cv-123' }),
+    },
   };
 
   return {
@@ -56,12 +59,14 @@ describe('ContractService', () => {
         vigencia: '12 meses',
         prazoRelativo: null,
         renovacao: 'automática por igual período',
+        renovacaoAutomatica: true,
       },
       valor: {
         total: '84000.00',
         moeda: 'BRL',
         formaPagamento: 'Mensal',
         reajuste: 'IPCA',
+        dataReajuste: null,
       },
       penalidades: {
         multaInadimplemento: '10%',

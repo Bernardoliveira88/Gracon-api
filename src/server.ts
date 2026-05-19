@@ -3,8 +3,6 @@ import { buildApp } from './app.js';
 import { env } from './config/env.js';
 import { startAlertJob } from './jobs/alert.jobs.js';
 
-const app = await buildApp();
-
 const start = async () => {
   try {
     const app = await buildApp();
