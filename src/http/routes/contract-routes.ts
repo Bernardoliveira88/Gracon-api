@@ -4,6 +4,7 @@ import { verifyWorkspaceMember } from '../middlewares/verify-workspace-member.js
 import { uploadContract } from '../controllers/contracts/upload.js';
 import { decideApproval } from '../controllers/contracts/decide-approval.js';
 import { semanticSearch } from '../controllers/contracts/semantic-search.js';
+import { listContracts } from '../controllers/contracts/list-contracts.js';
 import { uploadContractVersion } from '../controllers/contracts/upload-version.js';
 import { listContractVersions } from '../controllers/contracts/list-versions.js';
 import { exportReport } from '../controllers/contracts/export-report.js';
@@ -39,6 +40,50 @@ export async function contractRoutes(app: FastifyInstance) {
       },
     },
     uploadContract
+  );
+
+  app.get(
+    '/contracts',
+    {
+      schema: {
+        tags: ['Contracts'],
+        summary: 'Listar todos os contratos do workspace',
+        security: [{ bearerAuth: [] }, { workspaceId: [] }],
+        querystring: {
+          type: 'object',
+          properties: {
+            page: { type: 'string' },
+            limit: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              ok: { type: 'boolean' },
+              total: { type: 'number' },
+              page: { type: 'number' },
+              limit: { type: 'number' },
+              results: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    contract_id: { type: 'string', format: 'uuid' },
+                    title: { type: 'string' },
+                    status: { type: 'string' },
+                    file_url: { type: 'string' },
+                    created_at: { type: 'string' },
+                    updated_at: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    listContracts
   );
 
   app.get(

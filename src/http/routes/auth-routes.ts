@@ -80,12 +80,7 @@ export async function authRoutes(app: FastifyInstance) {
               },
             },
           },
-          400: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-            },
-          },
+
         },
       },
     },
