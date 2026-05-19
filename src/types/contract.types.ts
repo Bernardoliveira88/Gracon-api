@@ -40,6 +40,7 @@ export interface ExtractedContractData {
 export interface PipelineResult {
   success: boolean;
   filename: string;
+  fileUrl?: string;
   mimeType: string;
   sizeBytes: number;
   extractedData?: ExtractedContractData;
