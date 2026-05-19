@@ -47,7 +47,7 @@ export class ContractPipeline {
       filename: pdf.filename,
       mimeType: pdf.mimeType,
       sizeBytes: pdf.sizeBytes,
-      fileUrl: storageData.path, // <--- Injeta o caminho real do arquivo (ex: "contratos/1716...-nome.pdf")
+      fileUrl?: string;
       extractedData: extracted,
       rawGeminiResponse: raw,
     };
