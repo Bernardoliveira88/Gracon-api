@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
 
-const EMBEDDING_MODEL = 'text-embedding-004';
+const EMBEDDING_MODEL = 'models/text-embedding-004';
 const VECTOR_DIMENSIONS = 768;
 
 export class EmbeddingService {
