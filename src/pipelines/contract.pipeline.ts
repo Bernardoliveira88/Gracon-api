@@ -47,7 +47,7 @@ export class ContractPipeline {
       filename: pdf.filename,
       mimeType: pdf.mimeType,
       sizeBytes: pdf.sizeBytes,
-      fileUrl?: string;
+      fileUrl?: string,
       extractedData: extracted,
       rawGeminiResponse: raw,
     };
