@@ -8,6 +8,7 @@ import { listContracts } from '../controllers/contracts/list-contracts.js';
 import { uploadContractVersion } from '../controllers/contracts/upload-version.js';
 import { listContractVersions } from '../controllers/contracts/list-versions.js';
 import { exportReport } from '../controllers/contracts/export-report.js';
+import { getContract } from '../controllers/contracts/get-contract.js';
 
 export async function contractRoutes(app: FastifyInstance) {
   // Todas as rotas de contrato precisam de autenticação + membro do workspace
@@ -236,6 +237,33 @@ export async function contractRoutes(app: FastifyInstance) {
       },
     },
     listContractVersions
+  );
+
+app.get(
+    '/contracts/:id',
+    {
+      schema: {
+        tags: ['Contracts'],
+        summary: 'Detalhes completos de um contrato',
+        security: [{ bearerAuth: [] }, { workspaceId: [] }],
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              ok: { type: 'boolean' },
+              data: { type: 'object', additionalProperties: true },
+            },
+          },
+        },
+      },
+    },
+    getContract
   );
 
   // Relatórios
