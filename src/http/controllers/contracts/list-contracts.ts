@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../../../lib/prisma.js';
+import { mapContractStatusToUi } from '../../../types/status.js';
 
 const listQuerySchema = z.object({
   page: z
@@ -59,6 +60,7 @@ export async function listContracts(request: FastifyRequest, reply: FastifyReply
       contract_id: c.id,
       title: c.title,
       status: c.status,
+      status_display: mapContractStatusToUi(c.status),
       file_url: c.file_url,
       created_at: c.created_at,
       updated_at: c.updated_at,
