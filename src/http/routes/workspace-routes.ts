@@ -14,6 +14,9 @@ export async function workspaceRoutes(app: FastifyInstance) {
   app.post(
     '/invites/:token/accept',
     {
+      config: {
+        rateLimit: { max: 10, timeWindow: '15 minutes' },
+      },
       schema: {
         tags: ['Workspaces'],
         summary: 'Aceitar um convite para um workspace',

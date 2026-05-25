@@ -7,6 +7,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY é obrigatória para envio de e-mails.'),
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  FRONTEND_URL: z.string().url().default('http://localhost:3001'),
 });
 
 export type Env = z.infer<typeof envSchema>;

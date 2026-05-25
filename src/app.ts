@@ -1,6 +1,10 @@
 import fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
+import helmet from '@fastify/helmet';
+import cors from '@fastify/cors';
+import compress from '@fastify/compress';
+import rateLimit from '@fastify/rate-limit';
 import { env } from './config/env.js';
 import { errorHandler } from './http/middlewares/error-handler.js';
 import { authRoutes } from './http/routes/auth-routes.js';
@@ -11,20 +15,50 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 
 // Augmentação de tipos do JWT está em ./types/fastify.d.ts (carregada via tsconfig)
 
+// Limite global do body (25 MB) — uploads de PDF
+const BODY_LIMIT_BYTES = 25 * 1024 * 1024;
+
 export async function buildApp() {
   const app = fastify({
     logger: env.NODE_ENV !== 'test',
+    bodyLimit: BODY_LIMIT_BYTES,
   });
 
+  // --- Segurança / infraestrutura HTTP (registrar ANTES das rotas) ---
 
+  // Headers de segurança (CSP relaxado para permitir /docs do Swagger UI)
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+  });
 
-  // Plugins
+  // CORS — libera o frontend configurado em FRONTEND_URL
+  await app.register(cors, {
+    origin: env.FRONTEND_URL,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
+
+  // Compressão de resposta (brotli + gzip), aplicada globalmente
+  await app.register(compress, {
+    global: true,
+    encodings: ['br', 'gzip'],
+  });
+
+  // Rate limiting — global desabilitado; aplicado por rota via `config.rateLimit`
+  await app.register(rateLimit, {
+    global: false,
+    max: 100,
+    timeWindow: '1 minute',
+  });
+
+  // --- Plugins de aplicação ---
+
   app.register(fastifyJwt, {
     secret: env.JWT_SECRET,
   });
 
   app.register(multipart, {
-    limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+    limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
   });
 
   app.register(fastifySwagger, {
