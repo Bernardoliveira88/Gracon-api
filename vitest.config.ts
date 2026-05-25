@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    exclude: ['node_modules/**', 'dist/**', 'tests/e2e/**'],
     env: {
       DATABASE_URL: 'postgresql://postgres:rootpassword@localhost:5432/nexusdoc_test?schema=public',
       JWT_SECRET: 'test-secret-with-at-least-32-characters',
