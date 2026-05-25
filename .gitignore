@@ -11,3 +11,4 @@
 *.env.test
 *.env.production
 /coverage
+/uploads
