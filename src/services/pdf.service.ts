@@ -1,7 +1,10 @@
 import type { MultipartFile } from '@fastify/multipart';
+import { AppError } from '../errors/app-error.js';
 
-const MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
+const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
 const ALLOWED_MIME = ['application/pdf'];
+// Magic bytes do PDF: %PDF (0x25 0x50 0x44 0x46)
+const PDF_MAGIC_BYTES = Buffer.from([0x25, 0x50, 0x44, 0x46]);
 
 export interface PdfReadResult {
   filename: string;
@@ -16,8 +19,9 @@ export class PdfService {
     if (!ALLOWED_MIME.includes(file.mimetype)) {
       // Drena o stream para evitar leak de memória
       file.file.resume();
-      throw new Error(
+      throw new AppError(
         `Tipo de arquivo inválido: "${file.mimetype}". Apenas PDF é aceito.`,
+        400,
       );
     }
 
@@ -30,21 +34,25 @@ export class PdfService {
     const buffer = Buffer.concat(chunks);
 
     if (buffer.length === 0) {
-      throw new Error('O arquivo enviado está vazio.');
+      throw new AppError('O arquivo enviado está vazio.', 400);
     }
 
     if (buffer.length > MAX_SIZE_BYTES) {
       const sizeMb = (buffer.length / 1024 / 1024).toFixed(1);
-      throw new Error(
-        `Arquivo muito grande (${sizeMb} MB). Limite: 20 MB.`,
+      throw new AppError(
+        `Arquivo muito grande (${sizeMb} MB). Limite: 25 MB.`,
+        413,
       );
     }
 
-    // Valida assinatura mágica do PDF (%PDF-)
-    const header = buffer.subarray(0, 5).toString('ascii');
-    if (!header.startsWith('%PDF-')) {
-      throw new Error(
+    // Valida magic bytes do PDF: primeiros 4 bytes devem ser "%PDF"
+    if (
+      buffer.length < 4 ||
+      !buffer.subarray(0, 4).equals(PDF_MAGIC_BYTES)
+    ) {
+      throw new AppError(
         'O arquivo não é um PDF válido (assinatura inválida).',
+        400,
       );
     }
 
