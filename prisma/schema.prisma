@@ -34,6 +34,7 @@ model User {
   notes         ContractNote[]
   alerts        Alert[]
   approvals     ContractApproval[]
+  templates     ContractTemplate[]
 
   @@map("users")
 }
@@ -50,6 +51,7 @@ model Workspace {
   contracts  Contract[]
   configs    AlertConfig[]
   categories Category[]
+  templates  ContractTemplate[]
 
   @@map("workspaces")
 }
@@ -344,6 +346,28 @@ model ContractApproval {
 
   @@index([contract_id])
   @@map("contract_approvals")
+}
+
+// ==========================================
+// MÓDULO 4.5: TEMPLATES DE CONTRATO
+// ==========================================
+
+model ContractTemplate {
+  id           String   @id @default(uuid())
+  workspace_id String
+  name         String
+  description  String?
+  body         String
+  variables    Json     @default("[]")
+  created_by   String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  author       User      @relation(fields: [created_by], references: [id], onDelete: Cascade)
+
+  @@index([workspace_id])
+  @@map("contract_templates")
 }
 
 // ==========================================

@@ -11,6 +11,7 @@ import { authRoutes } from './http/routes/auth-routes.js';
 import { workspaceRoutes } from './http/routes/workspace-routes.js';
 import { contractRoutes } from './http/routes/contract-routes.js';
 import { categoryRoutes } from './http/routes/category-routes.js';
+import { templateRoutes } from './http/routes/template-routes.js';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 
@@ -74,6 +75,7 @@ export async function buildApp() {
         { name: 'Workspaces', description: 'Gestão de workspaces e membros' },
         { name: 'Contracts', description: 'Gestão, upload e busca de contratos' },
         { name: 'Categories', description: 'Gestão de categorias de contratos' },
+        { name: 'Templates', description: 'Modelos reutilizáveis de contratos' },
       ],
       components: {
         securitySchemes: {
@@ -108,6 +110,7 @@ export async function buildApp() {
   app.register(workspaceRoutes, { prefix: '/workspaces' });
   app.register(contractRoutes);
   app.register(categoryRoutes);
+  app.register(templateRoutes);
 
   // Healthcheck
   app.get('/', async (_request, reply) => {
