@@ -10,6 +10,7 @@ import { errorHandler } from './http/middlewares/error-handler.js';
 import { authRoutes } from './http/routes/auth-routes.js';
 import { workspaceRoutes } from './http/routes/workspace-routes.js';
 import { contractRoutes } from './http/routes/contract-routes.js';
+import { categoryRoutes } from './http/routes/category-routes.js';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 
@@ -72,6 +73,7 @@ export async function buildApp() {
         { name: 'Auth', description: 'Autenticação de usuários' },
         { name: 'Workspaces', description: 'Gestão de workspaces e membros' },
         { name: 'Contracts', description: 'Gestão, upload e busca de contratos' },
+        { name: 'Categories', description: 'Gestão de categorias de contratos' },
       ],
       components: {
         securitySchemes: {
@@ -105,6 +107,7 @@ export async function buildApp() {
   app.register(authRoutes, { prefix: '/auth' });
   app.register(workspaceRoutes, { prefix: '/workspaces' });
   app.register(contractRoutes);
+  app.register(categoryRoutes);
 
   // Healthcheck
   app.get('/', async (_request, reply) => {
