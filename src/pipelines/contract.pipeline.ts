@@ -3,6 +3,7 @@ import { PdfService } from "../services/pdf.service.js";
 import { GeminiService } from "../services/gemini.service.js";
 import type { PipelineResult } from "../types/contract.types.js";
 import { supabase } from "../lib/supabase.js"; // <--- Importa o cliente que criamos no passo anterior
+import { safeValidateGeminiExtraction } from "../schemas/gemini-extraction.schema.js";
 
 export class ContractPipeline {
   private pdfService: PdfService;
@@ -40,6 +41,17 @@ export class ContractPipeline {
       pdf.base64,
       pdf.mimeType
     );
+
+    // Etapa 2.1 — Validação Zod tolerante do JSON do Gemini.
+    // Não bloqueamos o pipeline em falha: apenas logamos um warning para
+    // detectar drift do prompt vs schema esperado pelo frontend.
+    const validation = safeValidateGeminiExtraction(extracted);
+    if (!validation.success) {
+      console.warn(
+        `[ContractPipeline] Resposta Gemini não bateu com GeminiExtractionSchema (arquivo: ${pdf.filename}). Issues:`,
+        validation.issues,
+      );
+    }
 
     // Retornamos os dados incluindo a URL/Caminho gerado pelo Storage
     return {

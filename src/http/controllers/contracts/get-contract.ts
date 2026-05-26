@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../../../lib/prisma.js';
+import { mapContractStatusToUi, mapPartyTypeToUi } from '../../../types/status.js';
 
 const paramsSchema = z.object({
   id: z.string().uuid(),
@@ -34,12 +35,16 @@ export async function getContract(request: FastifyRequest, reply: FastifyReply) 
         id: contract.id,
         title: contract.title,
         status: contract.status,
+        status_display: mapContractStatusToUi(contract.status),
         file_url: contract.file_url,
         created_at: contract.created_at,
         updated_at: contract.updated_at,
       },
       extraction: {
-        parties: contract.parties,
+        parties: contract.parties.map((p) => ({
+          ...p,
+          type_display: mapPartyTypeToUi(p.type),
+        })),
         clauses: contract.clauses,
         risks: contract.events
           .filter((e) => e.type === 'EXPIRATION' || e.type === 'RENEWAL')
