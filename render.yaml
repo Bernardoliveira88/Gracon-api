@@ -4,6 +4,9 @@
 # ==========================================
 # O banco PostgreSQL com pgvector será provido externamente
 # (Neon, Supabase, ou Render Starter) e configurado via DATABASE_URL.
+#
+# Como runtime é Docker, o boot (migrations + seed + start) vive no CMD
+# do `dockerfile`. Para alterar a sequência de inicialização, edite-o lá.
 
 services:
   - type: web

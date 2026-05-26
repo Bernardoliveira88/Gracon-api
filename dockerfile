@@ -42,4 +42,10 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/server.ts"]
+# Boot sequence:
+#   1. Aplica migrations pendentes (idempotente, fatal se falhar)
+#   2. Roda seed (idempotente — recria só o workspace "NexusDoc Demo (Seed)"
+#      e seus usuários `seed-*@nexusdoc.demo`. Não toca dados reais.
+#      Não-fatal: se falhar, loga e segue para garantir que o API sobe.)
+#   3. Inicia o servidor
+CMD ["sh", "-c", "npx prisma migrate deploy && (npx prisma db seed || echo '[boot] seed falhou, seguindo sem seedar') && node dist/src/server.js"]
