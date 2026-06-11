@@ -283,7 +283,11 @@ export class ContractService {
 
   private parseDate(dateStr?: string | null): Date | null {
     if (!dateStr) return null;
-    const date = new Date(dateStr);
+    // Gemini frequentemente devolve datas em pt-BR (DD/MM/YYYY) — new Date() não entende
+    const br = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const date = br
+      ? new Date(`${br[3]}-${br[2].padStart(2, '0')}-${br[1].padStart(2, '0')}T00:00:00Z`)
+      : new Date(dateStr);
     return isNaN(date.getTime()) ? null : date;
   }
 

@@ -47,5 +47,7 @@ EXPOSE 3000
 #   2. Roda seed (idempotente — recria só o workspace "NexusDoc Demo (Seed)"
 #      e seus usuários `seed-*@nexusdoc.demo`. Não toca dados reais.
 #      Não-fatal: se falhar, loga e segue para garantir que o API sobe.)
-#   3. Inicia o servidor
-CMD ["sh", "-c", "npx prisma migrate deploy && (npx prisma db seed || echo '[boot] seed falhou, seguindo sem seedar') && node dist/src/server.js"]
+#   3. Backfill — re-extrai value/datas do raw_gemini_json para contratos
+#      antigos com colunas null (bug de parsing pt-BR). Idempotente, não-fatal.
+#   4. Inicia o servidor
+CMD ["sh", "-c", "npx prisma migrate deploy && (npx prisma db seed || echo '[boot] seed falhou, seguindo') && (npx tsx prisma/backfill-extracted.ts || echo '[boot] backfill falhou, seguindo') && node dist/src/server.js"]
