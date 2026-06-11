@@ -10,8 +10,13 @@ import {
   Role,
 } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-import { prisma } from '../src/lib/prisma.js';
+// Client próprio (não importa de src/ — a imagem de produção só tem dist/,
+// e o seed roda via tsx direto deste arquivo no boot do container).
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 // =====================================================================
 // SEED IDEMPOTENTE & ISOLADO POR NAMESPACE

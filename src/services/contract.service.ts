@@ -38,7 +38,7 @@ export class ContractService {
             contract_id: contract.id,
             start_date: this.parseDate(extracted.prazos?.inicio),
             end_date: this.parseDate(extracted.prazos?.termino),
-            value: extracted.valor?.total ? parseFloat(extracted.valor.total) : null,
+            value: this.parseMoney(extracted.valor?.total),
             readjustment_index: extracted.valor?.reajuste,
             auto_renewal:
               extracted.prazos?.renovacao?.toLowerCase().includes('automática') ?? false,
@@ -177,7 +177,7 @@ export class ContractService {
             contract_id: contract.id,
             start_date: this.parseDate(extracted.prazos?.inicio),
             end_date: this.parseDate(extracted.prazos?.termino),
-            value: extracted.valor?.total ? parseFloat(extracted.valor.total) : null,
+            value: this.parseMoney(extracted.valor?.total),
             readjustment_index: extracted.valor?.reajuste,
             auto_renewal:
               extracted.prazos?.renovacao?.toLowerCase().includes('automática') ?? false,
@@ -285,5 +285,29 @@ export class ContractService {
     if (!dateStr) return null;
     const date = new Date(dateStr);
     return isNaN(date.getTime()) ? null : date;
+  }
+
+  /**
+   * Converte valores monetários extraídos pelo Gemini para Float.
+   * O Gemini devolve formato pt-BR ("R$ 1.234.567,89") — parseFloat puro
+   * vira NaN (símbolo no início) ou trunca no separador de milhar ("84.000" → 84).
+   */
+  private parseMoney(raw?: string | number | null): number | null {
+    if (raw == null) return null;
+    if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+
+    let s = raw.replace(/[^\d.,-]/g, '');
+    if (!s) return null;
+
+    if (s.includes(',')) {
+      // pt-BR: pontos são milhar, vírgula é decimal
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+      // Só pontos em grupos de 3 ("84.000", "1.200.000") → milhar pt-BR
+      s = s.replace(/\./g, '');
+    }
+
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : null;
   }
 }
