@@ -68,7 +68,7 @@ export async function buildApp() {
   app.register(fastifySwagger, {
     openapi: {
       info: {
-        title: 'NexusDoc API',
+        title: 'Gracon API',
         description: 'API para gestão inteligente de contratos',
         version: '1.0.0',
       },
@@ -121,7 +121,7 @@ export async function buildApp() {
   // Healthcheck
   app.get('/', async (_request, reply) => {
     return reply.send({
-      status: 'NexusDoc API Online 🚀',
+      status: 'Gracon API Online 🚀',
       environment: env.NODE_ENV,
     });
   });

@@ -44,6 +44,12 @@ export async function listContracts(request: FastifyRequest, reply: FastifyReply
         file_url: true,
         created_at: true,
         updated_at: true,
+        data: {
+          select: { value: true, start_date: true, end_date: true },
+        },
+        parties: {
+          select: { name: true, type: true },
+        },
       },
     }),
     prisma.contract.count({
@@ -56,14 +62,24 @@ export async function listContracts(request: FastifyRequest, reply: FastifyReply
     total,
     page,
     limit,
-    results: contracts.map((c) => ({
-      contract_id: c.id,
-      title: c.title,
-      status: c.status,
-      status_display: mapContractStatusToUi(c.status),
-      file_url: c.file_url,
-      created_at: c.created_at,
-      updated_at: c.updated_at,
-    })),
+    results: contracts.map((c) => {
+      // Contraparte = quem foi contratado; fallback para a primeira party
+      const counterparty =
+        c.parties.find((p) => p.type === 'HIRED')?.name ?? c.parties[0]?.name ?? null;
+
+      return {
+        contract_id: c.id,
+        title: c.title,
+        status: c.status,
+        status_display: mapContractStatusToUi(c.status),
+        file_url: c.file_url,
+        value: c.data?.value ?? null,
+        start_date: c.data?.start_date ?? null,
+        end_date: c.data?.end_date ?? null,
+        counterparty,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+      };
+    }),
   });
 }
