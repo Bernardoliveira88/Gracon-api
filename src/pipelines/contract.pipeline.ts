@@ -22,8 +22,17 @@ export class ContractPipeline {
     // Convertemos o base64 de volta para um Buffer que o SDK do Supabase aceita nativamente
     const fileBuffer = Buffer.from(pdf.base64, 'base64');
     
-    // Geramos um caminho único dentro do bucket para evitar colisões de arquivos com o mesmo nome
-    const uniquePath = `contratos/${Date.now()}-${pdf.filename}`;
+    // Geramos um caminho único dentro do bucket para evitar colisões de arquivos com o mesmo nome.
+    // O Supabase Storage rejeita keys com acentos, espaços e caracteres especiais
+    // (ex: "contrato de João .pdf") — sanitizamos para [a-z0-9._-].
+    const safeFilename = pdf.filename
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '') // remove acentos (João → Joao)
+      .replace(/[^a-zA-Z0-9._-]+/g, '-') // troca espaços/símbolos por hífen
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase() || 'contrato.pdf';
+    const uniquePath = `contratos/${Date.now()}-${safeFilename}`;
 
     const { data: storageData, error: storageError } = await supabase.storage
       .from('nexusdoc-pdfs') // Seu bucket exato do Supabase
